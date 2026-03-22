@@ -14,11 +14,13 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "idb": "^8.0.0"
+    "idb": "^8.0.0",
+    "vue": "^3.5.30"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^20.11.0",
+    "@vitejs/plugin-vue": "^6.0.5",
     "typescript": "^5.3.3",
     "vite": "^5.0.11",
     "vite-plugin-pwa": "^1.2.0"

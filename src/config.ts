@@ -12,12 +12,8 @@ export const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 
 // 添加 Vite 环境变量类型声明
 declare global {
-  interface ImportMeta {
-    env: {
-      DEV: boolean;
-      PROD: boolean;
-      BUILD_MODE?: string;
-      VITE_API_URL?: string;
-    };
+  interface ImportMetaEnv {
+    readonly BUILD_MODE?: string;
+    readonly VITE_API_URL?: string;
   }
 }
