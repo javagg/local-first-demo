@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:5174/)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s http://localhost:5174/src/main.ts)",
+      "Bash(cargo --version)",
+      "Bash(wasm-pack --version)",
+      "Bash(wasm-pack build:*)",
+      "Bash(cargo build:*)",
+      "Bash(pkill -f \"cargo build\")"
+    ]
+  }
+}
