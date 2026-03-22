@@ -28,3 +28,19 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+export type FileStorageBackend = 'opfs' | 'indexeddb';
+
+export interface FileRecord {
+  id: string;
+  userId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  storageBackend: FileStorageBackend;
+  createdAt: string;
+}
+
+export interface UploadFileResponse {
+  file: FileRecord;
+}

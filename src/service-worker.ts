@@ -31,19 +31,22 @@ async function handleApiRequest(request: Request): Promise<Response> {
   const url = request.url;
   const method = request.method;
 
-  let body;
+  let body: unknown;
   if (method !== 'GET' && method !== 'HEAD') {
+    const contentType = request.headers.get('Content-Type') || '';
+
     try {
-      body = await request.json();
+      if (contentType.includes('multipart/form-data')) {
+        body = await request.formData();
+      } else {
+        body = await request.json();
+      }
     } catch {
       body = undefined;
     }
   }
 
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-  if (token && body) {
-    body.token = token;
-  }
 
-  return apiRouter.handleRequest(url, method, body);
+  return apiRouter.handleRequest(url, method, body, token);
 }

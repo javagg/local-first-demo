@@ -8,6 +8,8 @@ export const API_BASE_URL = isLocalFirst
 
 export const SIMULATED_NETWORK_DELAY = 100; // ms
 
+export const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+
 // 添加 Vite 环境变量类型声明
 declare global {
   interface ImportMeta {

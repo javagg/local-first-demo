@@ -62,6 +62,18 @@ workerSelf.addEventListener('message', (event) => {
     case 'SANITIZE_INPUT':
       handleSanitizeInput(payload);
       break;
+    case 'OPFS_IS_SUPPORTED':
+      handleOpfsIsSupported(payload);
+      break;
+    case 'OPFS_WRITE_FILE':
+      handleOpfsWriteFile(payload);
+      break;
+    case 'OPFS_READ_FILE':
+      handleOpfsReadFile(payload);
+      break;
+    case 'OPFS_DELETE_FILE':
+      handleOpfsDeleteFile(payload);
+      break;
     case 'SYNC_DATA':
       handleDataSync(payload);
       break;
@@ -210,6 +222,91 @@ function handleSanitizeInput(payload: any) {
     type: 'SANITIZE_INPUT_RESULT',
     payload: { sanitized, requestId: payload.requestId },
   });
+}
+
+function handleOpfsIsSupported(payload: any) {
+  if (!wasmModule) {
+    workerSelf.postMessage({
+      type: 'OPFS_IS_SUPPORTED_RESULT',
+      payload: { error: 'WASM module not loaded', requestId: payload.requestId },
+    });
+    return;
+  }
+
+  const isSupported = wasmModule.opfs_is_supported();
+  workerSelf.postMessage({
+    type: 'OPFS_IS_SUPPORTED_RESULT',
+    payload: { isSupported, requestId: payload.requestId },
+  });
+}
+
+async function handleOpfsWriteFile(payload: any) {
+  if (!wasmModule) {
+    workerSelf.postMessage({
+      type: 'OPFS_WRITE_FILE_RESULT',
+      payload: { error: 'WASM module not loaded', requestId: payload.requestId },
+    });
+    return;
+  }
+
+  try {
+    await wasmModule.opfs_write_file(payload.path, payload.bytes);
+    workerSelf.postMessage({
+      type: 'OPFS_WRITE_FILE_RESULT',
+      payload: { success: true, requestId: payload.requestId },
+    });
+  } catch (error) {
+    workerSelf.postMessage({
+      type: 'OPFS_WRITE_FILE_RESULT',
+      payload: { error: String(error), requestId: payload.requestId },
+    });
+  }
+}
+
+async function handleOpfsReadFile(payload: any) {
+  if (!wasmModule) {
+    workerSelf.postMessage({
+      type: 'OPFS_READ_FILE_RESULT',
+      payload: { error: 'WASM module not loaded', requestId: payload.requestId },
+    });
+    return;
+  }
+
+  try {
+    const bytes = await wasmModule.opfs_read_file(payload.path);
+    workerSelf.postMessage({
+      type: 'OPFS_READ_FILE_RESULT',
+      payload: { bytes, requestId: payload.requestId },
+    });
+  } catch (error) {
+    workerSelf.postMessage({
+      type: 'OPFS_READ_FILE_RESULT',
+      payload: { error: String(error), requestId: payload.requestId },
+    });
+  }
+}
+
+async function handleOpfsDeleteFile(payload: any) {
+  if (!wasmModule) {
+    workerSelf.postMessage({
+      type: 'OPFS_DELETE_FILE_RESULT',
+      payload: { error: 'WASM module not loaded', requestId: payload.requestId },
+    });
+    return;
+  }
+
+  try {
+    await wasmModule.opfs_delete_file(payload.path);
+    workerSelf.postMessage({
+      type: 'OPFS_DELETE_FILE_RESULT',
+      payload: { success: true, requestId: payload.requestId },
+    });
+  } catch (error) {
+    workerSelf.postMessage({
+      type: 'OPFS_DELETE_FILE_RESULT',
+      payload: { error: String(error), requestId: payload.requestId },
+    });
+  }
 }
 
 async function handleDataSync(_payload: any) {

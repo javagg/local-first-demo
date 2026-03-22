@@ -223,3 +223,78 @@ body {
   color: #333;
   font-size: 16px;
 }
+
+.upload-section {
+  max-width: 900px;
+}
+
+.upload-hint {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.upload-form {
+  margin-bottom: 30px;
+}
+
+.upload-success {
+  color: #1f8f4a;
+  font-size: 14px;
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+.upload-error {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 4px;
+  min-height: 20px;
+}
+
+.file-list {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.file-list h3 {
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.file-name {
+  color: #222;
+  font-weight: 600;
+}
+
+.file-meta {
+  color: #666;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.file-delete-btn {
+  width: auto;
+  padding: 10px 16px;
+  background: #e74c3c;
+}
+
+.file-delete-btn:hover {
+  background: #d24134;
+}
+
+.empty-files {
+  color: #888;
+  font-size: 14px;
+}

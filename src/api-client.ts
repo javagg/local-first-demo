@@ -1,5 +1,13 @@
 import { API_BASE_URL } from './config';
-import type { ApiResponse, AuthResponse, LoginRequest, RegisterRequest, User } from './types';
+import type {
+  ApiResponse,
+  AuthResponse,
+  FileRecord,
+  LoginRequest,
+  RegisterRequest,
+  UploadFileResponse,
+  User,
+} from './types';
 
 class ApiClient {
   private token: string | null = null;
@@ -22,16 +30,15 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    const headers = new Headers(options.headers);
+    const isFormDataBody = options.body instanceof FormData;
 
-    if (options.headers) {
-      Object.assign(headers, options.headers);
+    if (!isFormDataBody && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
     }
 
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+      headers.set('Authorization', `Bearer ${this.token}`);
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -81,6 +88,26 @@ class ApiClient {
     return this.request<User>('/user/profile', {
       method: 'PUT',
       body: JSON.stringify({ updates }),
+    });
+  }
+
+  async uploadFile(file: File): Promise<ApiResponse<UploadFileResponse>> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.request<UploadFileResponse>('/files/upload', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async listFiles(): Promise<ApiResponse<FileRecord[]>> {
+    return this.request<FileRecord[]>('/files', { method: 'GET' });
+  }
+
+  async deleteFile(fileId: string): Promise<ApiResponse<{ id: string }>> {
+    return this.request<{ id: string }>(`/files/${encodeURIComponent(fileId)}`, {
+      method: 'DELETE',
     });
   }
 }

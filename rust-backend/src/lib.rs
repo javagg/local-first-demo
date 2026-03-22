@@ -1,5 +1,8 @@
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::JsFuture;
 use serde::{Deserialize, Serialize};
+use js_sys::{Function, Object, Promise, Reflect, Uint8Array};
 
 // ============================================================================
 // 数据结构定义
@@ -125,6 +128,66 @@ pub fn sanitize_input(input: &str) -> String {
 }
 
 // ============================================================================
+// OPFS 操作函数
+// ============================================================================
+
+#[wasm_bindgen]
+pub fn opfs_is_supported() -> bool {
+    let global = js_sys::global();
+
+    let navigator = match Reflect::get(&global, &JsValue::from_str("navigator")) {
+        Ok(value) => value,
+        Err(_) => return false,
+    };
+
+    let storage = match Reflect::get(&navigator, &JsValue::from_str("storage")) {
+        Ok(value) => value,
+        Err(_) => return false,
+    };
+
+    match Reflect::get(&storage, &JsValue::from_str("getDirectory")) {
+        Ok(value) => value.is_function(),
+        Err(_) => false,
+    }
+}
+
+#[wasm_bindgen]
+pub async fn opfs_write_file(path: String, data: Vec<u8>) -> Result<(), JsValue> {
+    let (directory, file_name) = resolve_parent_directory_and_file_name(&path, true).await?;
+    let file_handle = get_file_handle(&directory, &file_name, true).await?;
+    let writable = await_promise(call_method0(&file_handle, "createWritable")?).await?;
+
+    let bytes = Uint8Array::from(data.as_slice());
+    await_promise(call_method1(&writable, "write", &bytes.into())?).await?;
+    await_promise(call_method0(&writable, "close")?).await?;
+
+    Ok(())
+}
+
+#[wasm_bindgen]
+pub async fn opfs_read_file(path: String) -> Result<Vec<u8>, JsValue> {
+    let (directory, file_name) = resolve_parent_directory_and_file_name(&path, false).await?;
+    let file_handle = get_file_handle(&directory, &file_name, false).await?;
+    let file = await_promise(call_method0(&file_handle, "getFile")?).await?;
+    let buffer = await_promise(call_method0(&file, "arrayBuffer")?).await?;
+    let bytes = Uint8Array::new(&buffer);
+
+    Ok(bytes.to_vec())
+}
+
+#[wasm_bindgen]
+pub async fn opfs_delete_file(path: String) -> Result<(), JsValue> {
+    let (directory, file_name) = resolve_parent_directory_and_file_name(&path, false).await?;
+    await_promise(call_method1(
+        &directory,
+        "removeEntry",
+        &JsValue::from_str(&file_name),
+    )?)
+    .await?;
+    Ok(())
+}
+
+// ============================================================================
 // 数据库操作函数（通过 JSON 序列化与 JS 交互）
 // ============================================================================
 
@@ -181,6 +244,77 @@ fn get_expiry_timestamp(days: u64) -> String {
     let current = date_now() as u64;
     let expiry = current + (days * 24 * 60 * 60 * 1000);
     format!("{}", expiry)
+}
+
+async fn get_root_directory() -> Result<JsValue, JsValue> {
+    let global = js_sys::global();
+    let navigator = Reflect::get(&global, &JsValue::from_str("navigator"))?;
+    let storage = Reflect::get(&navigator, &JsValue::from_str("storage"))?;
+
+    await_promise(call_method0(&storage, "getDirectory")?).await
+}
+
+async fn get_directory_handle(parent: &JsValue, name: &str, create: bool) -> Result<JsValue, JsValue> {
+    let options = Object::new();
+    Reflect::set(&options, &JsValue::from_str("create"), &JsValue::from_bool(create))?;
+
+    await_promise(call_method2(
+        parent,
+        "getDirectoryHandle",
+        &JsValue::from_str(name),
+        &options.into(),
+    )?)
+    .await
+}
+
+async fn get_file_handle(parent: &JsValue, name: &str, create: bool) -> Result<JsValue, JsValue> {
+    let options = Object::new();
+    Reflect::set(&options, &JsValue::from_str("create"), &JsValue::from_bool(create))?;
+
+    await_promise(call_method2(
+        parent,
+        "getFileHandle",
+        &JsValue::from_str(name),
+        &options.into(),
+    )?)
+    .await
+}
+
+async fn resolve_parent_directory_and_file_name(path: &str, create_directories: bool) -> Result<(JsValue, String), JsValue> {
+    let segments: Vec<&str> = path.split('/').filter(|segment| !segment.is_empty()).collect();
+
+    if segments.is_empty() {
+        return Err(JsValue::from_str("Invalid OPFS path"));
+    }
+
+    let file_name = segments.last().unwrap().to_string();
+    let mut current = get_root_directory().await?;
+
+    for segment in segments.iter().take(segments.len() - 1) {
+        current = get_directory_handle(&current, segment, create_directories).await?;
+    }
+
+    Ok((current, file_name))
+}
+
+fn call_method0(target: &JsValue, name: &str) -> Result<JsValue, JsValue> {
+    let method = Reflect::get(target, &JsValue::from_str(name))?.dyn_into::<Function>()?;
+    method.call0(target)
+}
+
+fn call_method1(target: &JsValue, name: &str, arg0: &JsValue) -> Result<JsValue, JsValue> {
+    let method = Reflect::get(target, &JsValue::from_str(name))?.dyn_into::<Function>()?;
+    method.call1(target, arg0)
+}
+
+fn call_method2(target: &JsValue, name: &str, arg0: &JsValue, arg1: &JsValue) -> Result<JsValue, JsValue> {
+    let method = Reflect::get(target, &JsValue::from_str(name))?.dyn_into::<Function>()?;
+    method.call2(target, arg0, arg1)
+}
+
+async fn await_promise(value: JsValue) -> Result<JsValue, JsValue> {
+    let promise = value.dyn_into::<Promise>()?;
+    JsFuture::from(promise).await
 }
 
 // ============================================================================

@@ -8,12 +8,16 @@
     "build:local-first": "BUILD_MODE=local-first tsc && vite build",
     "build:server": "BUILD_MODE=server tsc && vite build",
     "preview": "vite preview",
-    "wasm:build": "cd rust-backend && wasm-pack build --target web"
+    "wasm:build": "cd rust-backend && wasm-pack build --target web",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "idb": "^8.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/node": "^20.11.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.11",

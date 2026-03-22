@@ -15,27 +15,26 @@ class DevApiInterceptor {
       // 拦截 /api/ 请求
       if (url.includes('/api/')) {
         const method = init?.method || 'GET';
-        let body: any = {};
+        let body: any = undefined;
 
         if (init?.body) {
-          try {
-            body = JSON.parse(init.body as string);
-          } catch {
-            body = {};
+          if (init.body instanceof FormData) {
+            body = init.body;
+          } else if (typeof init.body === 'string') {
+            try {
+              body = JSON.parse(init.body);
+            } catch {
+              body = undefined;
+            }
           }
         }
 
         // 从 headers 中提取 token
-        const headers = init?.headers as Record<string, string> | undefined;
-        const authHeader = headers?.['Authorization'];
+        const headers = new Headers(init?.headers);
+        const authHeader = headers.get('Authorization') || undefined;
         const token = authHeader?.replace('Bearer ', '');
 
-        // 将 token 添加到 body 中（即使是 GET 请求）
-        if (token) {
-          body.token = token;
-        }
-
-        return apiRouter.handleRequest(url, method, body);
+        return apiRouter.handleRequest(url, method, body, token);
       }
 
       // 其他请求使用原始 fetch

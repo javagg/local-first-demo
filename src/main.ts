@@ -1,7 +1,7 @@
 import './styles.css';
 import { isLocalFirst } from './config';
 import { api } from './api-client';
-import type { User } from './types';
+import type { FileRecord, User } from './types';
 import { wasmBackend } from './wasm/backend';
 
 // 在开发模式下导入 API 拦截器
@@ -12,6 +12,10 @@ if (import.meta.env.DEV) {
 class App {
   private currentUser: User | null = null;
   private currentPage: string = 'login';
+  private uploadedFiles: FileRecord[] = [];
+  private uploadsLoaded = false;
+  private uploadMessage = '';
+  private uploadError = '';
 
   async init() {
     // 初始化 WASM 后端
@@ -136,6 +140,9 @@ class App {
             <a href="#" data-page="settings" class="${page === 'settings' ? 'active' : ''}">
               设置
             </a>
+            <a href="#" data-page="uploads" class="${page === 'uploads' ? 'active' : ''}">
+              文件
+            </a>
             <a href="#" id="logout">退出</a>
           </div>
         </div>
@@ -154,6 +161,8 @@ class App {
         return this.renderProfile();
       case 'settings':
         return this.renderSettings();
+      case 'uploads':
+        return this.renderUploads();
       default:
         return this.renderDashboard();
     }
@@ -235,6 +244,53 @@ class App {
     `;
   }
 
+  renderUploads() {
+    const hasFiles = this.uploadedFiles.length > 0;
+
+    return `
+      <div class="profile-section upload-section">
+        <h2>文件上传</h2>
+        <p class="upload-hint">单文件上传，大小不超过 10MB。支持 OPFS，自动回退 IndexedDB。</p>
+        <form id="upload-form" class="upload-form">
+          <div class="form-group">
+            <label>选择文件</label>
+            <input type="file" name="file" id="file-input" required />
+          </div>
+          <button type="submit" class="btn">上传文件</button>
+          <div class="upload-success" id="upload-success">${this.uploadMessage}</div>
+          <div class="upload-error" id="upload-error">${this.uploadError}</div>
+        </form>
+
+        <div class="file-list">
+          <h3>我的文件</h3>
+          ${hasFiles ? `
+            ${this.uploadedFiles.map((file) => `
+              <div class="file-item" data-file-id="${file.id}">
+                <div>
+                  <div class="file-name">${file.name}</div>
+                  <div class="file-meta">
+                    ${(file.size / 1024).toFixed(1)} KB · ${file.storageBackend.toUpperCase()} · ${new Date(file.createdAt).toLocaleString('zh-CN')}
+                  </div>
+                </div>
+                <button type="button" class="btn file-delete-btn" data-delete-file="${file.id}">删除</button>
+              </div>
+            `).join('')}
+          ` : '<p class="empty-files">暂无文件</p>'}
+        </div>
+      </div>
+    `;
+  }
+
+  async loadUploadedFiles() {
+    const result = await api.listFiles();
+
+    if (result.success && result.data) {
+      this.uploadedFiles = result.data;
+      this.uploadsLoaded = true;
+      this.render();
+    }
+  }
+
   attachAuthListeners() {
     const form = document.getElementById('auth-form') as HTMLFormElement;
     const switchBtn = document.getElementById('auth-switch');
@@ -281,7 +337,13 @@ class App {
     navLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        this.currentPage = (e.target as HTMLElement).dataset.page || 'dashboard';
+        const nextPage = (e.target as HTMLElement).dataset.page || 'dashboard';
+        if (nextPage === 'uploads') {
+          this.uploadsLoaded = false;
+          this.uploadMessage = '';
+          this.uploadError = '';
+        }
+        this.currentPage = nextPage;
         this.render();
       });
     });
@@ -304,6 +366,66 @@ class App {
         this.currentUser = result.data;
         this.render();
       }
+    });
+
+    if (this.currentPage === 'uploads') {
+      this.attachUploadListeners();
+      if (!this.uploadsLoaded) {
+        this.loadUploadedFiles();
+      }
+    }
+  }
+
+  attachUploadListeners() {
+    const uploadForm = document.getElementById('upload-form') as HTMLFormElement | null;
+    const deleteButtons = document.querySelectorAll('[data-delete-file]');
+
+    uploadForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
+      const file = fileInput?.files?.[0];
+
+      this.uploadMessage = '';
+      this.uploadError = '';
+
+      if (!file) {
+        this.uploadError = '请选择一个文件';
+        this.render();
+        return;
+      }
+
+      const result = await api.uploadFile(file);
+      if (result.success) {
+        this.uploadMessage = '上传成功';
+        this.uploadError = '';
+        this.uploadsLoaded = false;
+        await this.loadUploadedFiles();
+      } else {
+        this.uploadError = result.error || '上传失败';
+        this.uploadMessage = '';
+        this.render();
+      }
+    });
+
+    deleteButtons.forEach((button) => {
+      button.addEventListener('click', async () => {
+        const fileId = (button as HTMLElement).dataset.deleteFile;
+        if (!fileId) {
+          return;
+        }
+
+        const result = await api.deleteFile(fileId);
+        if (result.success) {
+          this.uploadMessage = '删除成功';
+          this.uploadError = '';
+          this.uploadsLoaded = false;
+          await this.loadUploadedFiles();
+        } else {
+          this.uploadError = result.error || '删除失败';
+          this.uploadMessage = '';
+          this.render();
+        }
+      });
     });
   }
 }

@@ -68,6 +68,16 @@ npm run build:server
 npm run wasm:build
 ```
 
+### 端到端测试（文件上传）
+
+```bash
+# 首次运行需要安装浏览器
+npx playwright install chromium
+
+# 运行端到端测试
+npm run test:e2e
+```
+
 ## 项目结构
 
 ```

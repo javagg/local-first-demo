@@ -23,18 +23,42 @@ interface LocalDemoDB extends DBSchema {
       expiresAt: string;
     };
   };
+  files: {
+    key: string;
+    value: {
+      id: string;
+      userId: string;
+      name: string;
+      mimeType: string;
+      size: number;
+      storageBackend: 'opfs' | 'indexeddb';
+      opfsPath?: string;
+      blob?: Blob;
+      createdAt: string;
+    };
+    indexes: { 'by-userId': string };
+  };
 }
 
 class DatabaseService {
   private db: IDBPDatabase<LocalDemoDB> | null = null;
 
   async init() {
-    this.db = await openDB<LocalDemoDB>('localdemo-db', 1, {
+    this.db = await openDB<LocalDemoDB>('localdemo-db', 2, {
       upgrade(db) {
-        const userStore = db.createObjectStore('users', { keyPath: 'id' });
-        userStore.createIndex('by-email', 'email', { unique: true });
+        if (!db.objectStoreNames.contains('users')) {
+          const userStore = db.createObjectStore('users', { keyPath: 'id' });
+          userStore.createIndex('by-email', 'email', { unique: true });
+        }
 
-        db.createObjectStore('sessions', { keyPath: 'token' });
+        if (!db.objectStoreNames.contains('sessions')) {
+          db.createObjectStore('sessions', { keyPath: 'token' });
+        }
+
+        if (!db.objectStoreNames.contains('files')) {
+          const fileStore = db.createObjectStore('files', { keyPath: 'id' });
+          fileStore.createIndex('by-userId', 'userId', { unique: false });
+        }
       },
     });
 
@@ -97,6 +121,27 @@ class DatabaseService {
     const updated = { ...user, ...updates };
     await this.db!.put('users', updated);
     return updated;
+  }
+
+  async createFile(file: LocalDemoDB['files']['value']) {
+    if (!this.db) await this.init();
+    await this.db!.add('files', file);
+    return file;
+  }
+
+  async getFile(id: string) {
+    if (!this.db) await this.init();
+    return this.db!.get('files', id);
+  }
+
+  async getFilesByUserId(userId: string) {
+    if (!this.db) await this.init();
+    return this.db!.getAllFromIndex('files', 'by-userId', userId);
+  }
+
+  async deleteFile(id: string) {
+    if (!this.db) await this.init();
+    await this.db!.delete('files', id);
   }
 }
 
