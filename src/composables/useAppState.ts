@@ -4,11 +4,11 @@ import { isLocalFirst } from '../config';
 import type { FileRecord, User } from '../types';
 import { wasmBackend } from '../wasm/backend';
 
-export type AppPage = 'login' | 'register' | 'dashboard' | 'profile' | 'settings' | 'uploads';
+export type AppPage = 'landing' | 'login' | 'register' | 'dashboard' | 'profile' | 'settings' | 'uploads';
 
 export function useAppState() {
   const currentUser = ref<User | null>(null);
-  const currentPage = ref<AppPage>('login');
+  const currentPage = ref<AppPage>('landing');
   const profileName = ref('');
   const uploadedFiles = ref<FileRecord[]>([]);
   const uploadsLoaded = ref(false);
@@ -91,6 +91,18 @@ export function useAppState() {
     authError.value = '';
   }
 
+  function goToLanding() {
+    currentPage.value = 'landing';
+    authError.value = '';
+    resetAuthForm();
+  }
+
+  function startAuth() {
+    currentPage.value = 'login';
+    authError.value = '';
+    resetAuthForm();
+  }
+
   async function handleAuthSubmit() {
     authError.value = '';
 
@@ -116,7 +128,7 @@ export function useAppState() {
   async function logout() {
     await api.logout();
     currentUser.value = null;
-    currentPage.value = 'login';
+    currentPage.value = 'landing';
     uploadedFiles.value = [];
     uploadsLoaded.value = false;
     uploadMessage.value = '';
@@ -191,6 +203,8 @@ export function useAppState() {
   }
 
   return {
+    goToLanding,
+    startAuth,
     currentUser,
     currentPage,
     profileName,

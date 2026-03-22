@@ -1,14 +1,29 @@
 <template>
-  <AuthView
-    v-if="!currentUser"
-    :is-login-page="isLoginPage"
+  <!-- Landing Page -->
+  <LandingView v-if="!currentUser && currentPage === 'landing'" @start="startAuth" />
+
+  <!-- Login Page -->
+  <LoginView
+    v-else-if="!currentUser && currentPage === 'login'"
     :auth-form="authForm"
     :auth-error="authError"
     @submit="handleAuthSubmit"
     @toggle-mode="toggleAuthPage"
+    @back="goToLanding"
   />
 
-  <template v-else>
+  <!-- Register Page -->
+  <RegisterView
+    v-else-if="!currentUser && currentPage === 'register'"
+    :auth-form="authForm"
+    :auth-error="authError"
+    @submit="handleAuthSubmit"
+    @toggle-mode="toggleAuthPage"
+    @back="goToLanding"
+  />
+
+  <!-- Dashboard (Logged In) -->
+  <template v-else-if="currentUser">
     <AppNavbar :current-page="currentPage" @navigate="navigate" @logout="logout" />
 
     <div class="container">
@@ -38,6 +53,9 @@ import { onMounted } from 'vue';
 import AppNavbar from './components/layout/AppNavbar.vue';
 import { useAppState } from './composables/useAppState';
 import { isLocalFirst } from './config';
+import LandingView from './views/LandingView.vue';
+import LoginView from './views/LoginView.vue';
+import RegisterView from './views/RegisterView.vue';
 import AuthView from './views/AuthView.vue';
 import DashboardView from './views/DashboardView.vue';
 import ProfileView from './views/ProfileView.vue';
@@ -57,6 +75,8 @@ const {
   createdAtLabel,
   init,
   toggleAuthPage,
+  goToLanding,
+  startAuth,
   handleAuthSubmit,
   logout,
   navigate,
