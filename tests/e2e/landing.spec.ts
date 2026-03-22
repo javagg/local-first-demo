@@ -29,11 +29,11 @@ test.describe('首页和注册功能端到端', () => {
     await page.goto('/');
 
     // 找到并点击"开始体验"按钮
-    const startButtons = await page.locator('button:has-text("开始体验")').count();
+    const startButtons = await page.getByRole('button', { name: '开始体验' }).count();
     expect(startButtons).toBeGreaterThan(0);
 
     // 点击第一个按钮
-    await page.locator('button:has-text("开始体验")').first().click();
+    await page.getByRole('button', { name: '开始体验' }).first().click();
 
     // 验证进入登录页面
     await expect(page.getByRole('heading', { name: '欢迎登录' })).toBeVisible();
@@ -46,7 +46,7 @@ test.describe('首页和注册功能端到端', () => {
     await page.goto('/');
 
     // 进入登录页面
-    await page.locator('button:has-text("开始体验")').first().click();
+    await page.getByRole('button', { name: '开始体验' }).first().click();
 
     // 验证在登录页面
     await expect(page.getByRole('heading', { name: '欢迎登录' })).toBeVisible();
@@ -66,7 +66,7 @@ test.describe('首页和注册功能端到端', () => {
     await page.goto('/');
 
     // 进入登录页面
-    await page.locator('button:has-text("开始体验")').first().click();
+    await page.getByRole('button', { name: '开始体验' }).first().click();
 
     // 切换到注册页面
     await page.getByRole('link', { name: '立即注册' }).click();
@@ -85,7 +85,7 @@ test.describe('首页和注册功能端到端', () => {
     await page.goto('/');
 
     // 进入登录页面
-    await page.locator('button:has-text("开始体验")').first().click();
+    await page.getByRole('button', { name: '开始体验' }).first().click();
 
     // 验证在登录页面
     await expect(page.getByRole('heading', { name: '欢迎登录' })).toBeVisible();
@@ -102,7 +102,7 @@ test.describe('首页和注册功能端到端', () => {
     await page.goto('/');
 
     // 进入登录页面
-    await page.locator('button:has-text("开始体验")').first().click();
+    await page.getByRole('button', { name: '开始体验' }).first().click();
 
     // 切换到注册页面
     await page.getByRole('link', { name: '立即注册' }).click();

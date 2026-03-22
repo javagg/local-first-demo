@@ -24,9 +24,10 @@
 
   <!-- Dashboard (Logged In) -->
   <template v-else-if="currentUser">
-    <AppNavbar :current-page="currentPage" @navigate="navigate" @logout="logout" />
+    <div class="app-layout">
+      <AppSidebar :current-page="currentPage" :user-name="currentUser?.name || ''" @navigate="navigate" @logout="logout" />
 
-    <div class="container">
+      <main class="main-content">
       <DashboardView v-if="currentPage === 'dashboard'" :user-name="currentUser?.name || ''" />
       <ProfileView
         v-else-if="currentPage === 'profile'"
@@ -44,13 +45,14 @@
         @upload-file="uploadFile"
         @remove-file="removeFile"
       />
+      </main>
     </div>
   </template>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import AppNavbar from './components/layout/AppNavbar.vue';
+import AppSidebar from './components/layout/AppSidebar.vue';
 import { useAppState } from './composables/useAppState';
 import { isLocalFirst } from './config';
 import LandingView from './views/LandingView.vue';
@@ -89,3 +91,27 @@ onMounted(async () => {
   await init();
 });
 </script>
+
+<style scoped>
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 20px;
+  overflow-y: auto;
+  transition: margin-left 0.3s ease;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: 60px 16px 20px 16px;
+  }
+}
+</style>
